@@ -1,0 +1,54 @@
+---
+title: "Bike cleaning"
+author: "Thomas Lumley"
+date: "8/3/2018"
+output: html_document
+---
+
+## Cleaning the bike data with refinr
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+The cycle counter data from the first assignment:
+
+```{r}
+bike_files<- list.files(path = "." ,pattern=".csv",full=TRUE)
+bike_data<-map(bike_files,read_csv)
+```
+
+There are some columns that are entirely `NA`: get rid of them with `select_if`
+
+```{r}
+notallNA<-function(x) !all(is.na(x))
+bike_data <- map(bike_data, select_if, notallNA)
+```
+
+Now we could try tidying the data
+
+```{r}
+bike_tidy<-map(bike_data, gather, value="rider_count", key="counter", -Date)
+allbikes<-bind_rows(bike_tidy)
+allbikes %>% group_by(counter) %>% count() 
+```
+
+Even among the first few rows shown it's clear that `Curran St total`, `Curran Street Total`, and 
+`Curran Street Total Cyclists` should be the same. 
+
+Load the `refinr` package and read the vignette. Try using `n_gram_merge()` and `key_collision_merge` on the `counter` variable.  Then try the `ignore_strings` argument to the functions, starting with `ignore_strings=c("cycle","counter","total","cyclists")`
+
+```{r include=FALSE}
+library(refinr)
+sort(unique(n_gram_merge(allbikes$counter, 
+                    ignore_strings=c("cycle","counter","total","cyclists"))))
+```
+
+You won't be able to get all the way automatically: there's no way `refinr` can know that "Quay St Vector Arena" and "Quay St Spark Arena" are the same as each other but not the same as "Quay St Totem"
+
+The next step is to write out to a file a two-column table with the distinct original values of `counter` and the merged values. You'll have to edit the second column of this table by hand in a text editor or spreadsheet (it helps if it's in alphabetical order).  Read the table back in and call it something like `name_table`, with column names `counter` and `counter_edited`
+
+Now, use a join on `counter` to add the edited name to the `allbikes` data set.   Plot a graph showing the day-of-week pattern for each counter. 
+
+*Note: there's a standalone package called 'OpenRefine' that's better than `refinr` but it's not installed on the lab computers*
