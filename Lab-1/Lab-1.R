@@ -28,9 +28,12 @@ click_through_group_df =
 
 # Question 2
 
-log_tib %>% 
+first_page_visit_df = 
+  log_tib %>% 
   group_by(session_id) %>% 
   arrange(desc(Time), .by_group = TRUE) %>% 
-  filter(action == 'visitPage') %>% 
+  filter(action == 'visitPage')%>% 
   group_by(session_id) %>% 
-  summarise(first_page = first(page_id))
+  summarise(first_page_position = first(result_position)) %>% 
+  group_by(first_page_position) %>% 
+  summarise(count = n())
