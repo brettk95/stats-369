@@ -20,15 +20,19 @@ total_unique_sessions = total_unique_sessions[-1,] %>% print()
 # the number of session_id's that have 'visitpage' per day
 unique_sessions_visits = log_tib %>% group_by(Day,action) %>% summarise(visited = n_distinct(session_id)) %>% filter(action == 'visitPage') %>% print()
 
-answer_1a = unique_sessions_visits$visited/total_unique_sessions$total_sessions
+answer_1a = inner_join(unique_sessions_visits, total_unique_sessions, by = 'Day')
+answer_1a = answer_1a %>% mutate(Clickthrough_rate = visited/total_sessions)
+answer_1a
 
 # Question 1b
-total_unique_sessions_groups = log_tib %>% group_by(Day,group) %>% summarise(total_sessions = n_distinct(session_id))
-total_unique_sessions_groups = total_unique_sessions[-1,]
+total_unique_sessions_groups = log_tib %>% group_by(group,Day) %>% summarise(total_sessions = n_distinct(session_id)) %>% print()
+total_unique_sessions_groups = total_unique_sessions_groups[-1,] %>% print()
 unique_sessions_visits_groups = log_tib %>% group_by(Day,group, action) %>% summarise(visited = n_distinct(session_id)) %>% filter(action == 'visitPage') %>% print()
+unique_sessions_visits_groups = unique_sessions_visits_groups[,c('group','Day','action','visited')]
 
-answer_1b = unique_sessions_visits_groups$visited / total_unique_sessions_groups$total_sessions
-
+answer_1b = inner_join(unique_sessions_visits_groups, total_unique_sessions_groups, by = c("Day","group"))
+answer_1b = answer_1b %>% mutate(Proportion = visited/total_sessions) %>% arrange(Day)
+answer_1b
 
 # Question 2
 
