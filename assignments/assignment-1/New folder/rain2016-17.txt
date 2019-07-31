@@ -1,3 +1,12 @@
+Station information:
+Name,Agent Number,Network Number,Latitude (dec.deg),Longitude (dec.deg),Height (m),Posn_Precision,Observing Authority
+Auckland, Mangere Ews,22719,C64972,-36.96177,174.77642,5,H,Niwa
+Auckland, North Shore Albany Ews,37852,A64776,-36.74827,174.71377,64,H,Niwa
+Note: Position precision types are: "W" = based on whole minutes, "T" = estimated to tenth minute,
+"G" = derived from gridref , "E" = error cases derived from gridref,
+"H" = based on GPS readings (NZGD49), "D" = by definition i.e. grid points.
+
+Rain: Hourly
 Station,Date(NZST),Time(NZST),Amount(mm),Period(Hrs),Freq
 22719,20160101,0000,0.0,1,H
 37852,20160101,0000,0.0,1,H
@@ -35087,3 +35096,12 @@ Station,Date(NZST),Time(NZST),Amount(mm),Period(Hrs),Freq
 37852,20171231,2200,0.0,1,H
 22719,20171231,2300,0.0,1,H
 37852,20171231,2300,0.0,1,H
+22719,20180101,0000,0.0,1,H
+37852,20180101,0000,0.0,1,H
+
+UserName is = tslumley
+Total number of rows output = 35090
+Number of rows remaining in subscription = 1793302
+Copyright NIWA 2019 Subject to NIWA's Terms and Conditions
+See: http://clifloecd1.niwa.co.nz/pls/niwp/doc/terms.html
+Comments to: cliflo@niwa.co.nz
