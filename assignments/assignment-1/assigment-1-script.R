@@ -41,14 +41,14 @@ daily_both["week"] = floor_date(daily_both$Date, "week")
 # plot over every day
 ggplot(data = daily_both, aes(Date, total_daily_riders)) + geom_point()
 
-# plot over days over time (weekly data)
-weekly_data = daily_both %>% group_by(week) %>% summarise(total_weekly_riders = mean(total_daily_riders),
-                                                          total_weekly_rain = mean(total_daily_rain))
+# plot over days over time (weekly data) - "mean" here means the "mean total riders over the week" same for all other ones.
+weekly_data = daily_both %>% group_by(week) %>% summarise(mean_weekly_riders = mean(total_daily_riders),
+                                                          mean_weekly_rain = mean(total_daily_rain))
 weekly_data = weekly_data[c(-1,-158),]
 
 ggplot()+
-  geom_line(data = weekly_data, aes(x = week, y = total_weekly_riders/100), color = "black")+
-  geom_line(data = weekly_data, aes(x = week, y = total_weekly_rain), color = "blue")
+  geom_line(data = weekly_data, aes(x = week, y = mean_weekly_riders), color = "black")+
+  geom_line(data = weekly_data, aes(x = week, y = mean_weekly_rain), color = "blue")
 
 # plot over days of the week
 day_of_week_data = daily_both %>% group_by(day_of_week) %>% summarise(mean_riders_day = mean(total_daily_riders))
@@ -60,19 +60,21 @@ ggplot(data = day_of_week_data, aes(x = day_of_week, y = mean_riders_day))+
 # plot seasonal data
 seasonal = daily_both %>% separate(Date, c("year","month","day"), sep = '-') %>% group_by(month)
 
-seasonal = seasonal %>% mutate(Season = ifelse(month == "12"|month=="01"|month=="02", "summer", 
+seasonal = seasonal %>% mutate(season = ifelse(month == "12"|month=="01"|month=="02", "summer", 
                                     ifelse(month=="03"|month=="04"|month=="05", "autumn", 
                                     ifelse(month=="06"|month=="07"|month=="08", "winter",
-                                           ifelse(month=="09"|month=="10"|month=="11", "spring", NA)))))
+                                           ifelse(month=="09"|month=="10"|month=="11", "spring", NA))))) # create seasons
 
 mean_seasonal = seasonal %>% 
-  group_by(year, Season) %>% 
+  group_by(year, season) %>% 
   summarise(mean_cyclists = mean(total_daily_riders, na.rm = T), mean_rain = mean(total_daily_rain, na.rm = T)) %>% 
-  mutate(Season = factor(Season, levels = c("summer", "autumn", "winter", "spring"))) %>% 
+  mutate(season = factor(season, levels = c("summer", "autumn", "winter", "spring"))) %>% 
   arrange(desc(mean_cyclists)) %>% 
-  arrange(year, Season)
+  arrange(year, season)
 
-ggplot(data = mean_seasonal, aes(year,mean_cyclists)) + geom_point() # this plot is shit
+ggplot(data = mean_seasonal, aes(season,mean_cyclists, group = year)) + 
+  geom_line() +
+  labs(y = "mean daily cyclists over season", x = "season")# this plot is shit
 
 
 
