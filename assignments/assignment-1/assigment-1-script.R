@@ -1,5 +1,6 @@
 library('tidyverse')
 library('refinr')
+library('lubridate')
 library('ggplot2')
 bike_files = list.files(path = "." ,pattern=".csv",full=TRUE)
 bike_data = map(bike_files,read_csv)
@@ -71,7 +72,10 @@ mean_seasonal = seasonal %>%
   arrange(desc(mean_cyclists)) %>% 
   arrange(year, Season)
 
-ggplot(data = mean_seasonal, aes(year,mean_cyclists)) + geom_point()
+ggplot(data = mean_seasonal, aes(year,mean_cyclists)) + geom_point() # this plot is shit
+
+
+
 
 # Fit a regression model to predict number of cyclists from year, season, day of the week, and rain
 
