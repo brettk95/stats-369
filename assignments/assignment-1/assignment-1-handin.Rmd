@@ -1,0 +1,128 @@
+---
+title: "stats-369-a1-wkim989"
+author: "Brett Kim"
+date: "4 August 2019"
+output: html_document
+---
+
+### Question 1
+One obstacle that we encouter when trying to convert our data to tidy format is that there are different labels for the same street name variable, e.g. Curran Street vs Curran St. This means that when joining the dataset into one dataframe, there are duplicate labels for one street that R thinks are different streets.
+
+### Question 2
+```{r, warning = FALSE, message = FALSE}
+# load the libraries
+library('tidyverse')
+library('refinr')
+library('lubridate')
+library('ggplot2')
+```
+
+```{r, message = FALSE}
+# load the data in and join into tidy-ish format getting rid of NA values
+# the column names have been cleaned up manually in the csv files themselves
+bike_files = list.files(path = "." ,pattern=".csv",full=TRUE)
+bike_data = map(bike_files,read_csv)
+notallNA<-function(x) !all(is.na(x))
+bike_data <- map(bike_data, select_if, notallNA)
+bike_tidy<-map(bike_data, gather, value="rider_count", key="counter", -Date)
+allbikes<-bind_rows(bike_tidy)
+allbikes = allbikes %>% filter(!is.na(Date))
+```
+
+```{r}
+bikes = allbikes %>% separate(Date, c('Dow','Date','Month','Year')) # separate the "Date"" column into separate columns
+
+bikes$Month = match(bikes$Month, month.abb) # change month abbreviations to numbers
+bikes$Month = sprintf("%02d",bikes$Month) # change all single digit months to double digits
+
+bikes$Date = as.integer(bikes$Date) # change dtype of date from characters to integers
+bikes$Date = sprintf("%02d",bikes$Date) # change single digit dates to double digits
+
+bikes = bikes %>% mutate(time = paste(Year,Month,Date)) # unite the date month and year column 
+bikes$time = gsub(" ", "", bikes$time, fixed = TRUE) # remove spaces between date month and year
+
+daily_bike = bikes %>% group_by(time) %>% summarise(total_daily_riders = sum(rider_count, na.rm = TRUE)) # summarise by time and get total rider counts
+daily_bike$time = as.integer(daily_bike$time) # change time to integer dtype
+```
+
+```{r, message = FALSE}
+# load the rain files
+rain_files = list.files(path = '.', pattern = '.txt', full = TRUE)
+rain_data = map(rain_files, read_csv)
+rain_data = bind_rows(rain_data)[c(-5,-6)] # remove columns 5 and 6 because they're not useful
+colnames(rain_data) = c("station", "time", "hour", "amount") # rename column names of rain dataset
+daily_rain = rain_data %>% group_by(time) %>% summarise(total_daily_rain = sum(amount)) # summarise total daily rain 
+daily_rain = daily_rain[-1097,] # remove 1st Jan 2019
+```
+
+```{r}
+# column bind daily_bike and daily_rain
+daily_both = inner_join(daily_bike, daily_rain, by = "time") # join the rain and bike summaries on the time column
+daily_both$time = as.character(daily_both$time) # change time dtype to character so that...
+daily_both$time = as.Date(daily_both$time, "%Y%m%d")# change time to date dtype
+daily_both = daily_both %>% mutate(day_of_week = weekdays(time)) # get days of week from the time column
+daily_both["week"] = floor_date(daily_both$time, "week") # get weekly data 
+
+print(daily_both)
+```
+
+### Question 3
+```{r, message = FALSE}
+# plot of cyclists over time
+ggplot(data = daily_both, aes(time, total_daily_riders)) + 
+  geom_point() +
+  labs(y = 'total daily cyclist', x = 'time', title = 'Total Daily Cyclists Over Time (2016 ~ 2018)')
+```
+
+```{r}
+# plot seasonal data over time
+daily_both = daily_both %>% 
+  mutate(time_copy = time) %>%
+  separate(time_copy, c("year","month","day"), sep = '-') %>% 
+  group_by(month) %>% 
+  mutate(season = ifelse(month == "12"|month=="01"|month=="02", "summer", 
+                         ifelse(month=="03"|month=="04"|month=="05", "autumn", 
+                                ifelse(month=="06"|month=="07"|month=="08", "winter",
+                                       ifelse(month=="09"|month=="10"|month=="11", "spring", NA)))))
+
+daily_both$day_of_week = factor(daily_both$day_of_week, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+mean_seasonal = daily_both %>% 
+  group_by(year, season) %>% 
+  summarise(total_cyclists = sum(total_daily_riders, na.rm = T)) %>% 
+  mutate(season = factor(season, levels = c("summer", "autumn", "winter", "spring"))) %>% 
+  arrange(desc(total_cyclists)) %>% 
+  arrange(year, season)
+
+ggplot(data = mean_seasonal, aes(season,total_cyclists, group = year)) + 
+  geom_line() +
+  labs(y = "total cyclists", x = "season")
+```
+
+```{r}
+# plot day of week data over time
+day_of_week_data = daily_both %>% group_by(year, day_of_week) %>% summarise(mean_riders_day = mean(total_daily_riders))
+
+day_of_week_data$day_of_week = factor(day_of_week_data$day_of_week, 
+                                      levels = c("Monday","Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+ggplot(data = day_of_week_data, aes(x = day_of_week, y = mean_riders_day))+
+  geom_point(stat = "identity") +
+  labs(y = 'mean total daily cyclists', x = 'days of the week')
+```
+
+```{r}
+# plot total daily riders over time with rain
+ggplot() +
+  geom_point(data = daily_both, aes(time, total_daily_riders/100)) +
+  geom_point(data = daily_both, aes(time, total_daily_rain), col = 'blue')
+```
+
+
+
+
+
+
+
+
+

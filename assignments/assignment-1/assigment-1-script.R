@@ -43,6 +43,10 @@ ggplot(data = daily_both, aes(Date, total_daily_riders)) +
   geom_point() +
   labs(y = 'total daily cyclist', x = 'time')
 
+ggplot() +
+  geom_point(data = daily_both, aes(Date, total_daily_riders/100)) +
+  geom_point(data = daily_both, aes(Date, total_daily_rain), col = 'blue')
+
 # plot over days over time (weekly data) - "mean" here means the "mean total riders over the week" same for all other ones.
 weekly_data = daily_both %>% group_by(week) %>% summarise(mean_weekly_riders = mean(total_daily_riders),
                                                           mean_weekly_rain = mean(total_daily_rain))
@@ -61,6 +65,8 @@ seasonal = seasonal %>% mutate(season = ifelse(month == "12"|month=="01"|month==
                                     ifelse(month=="06"|month=="07"|month=="08", "winter",
                                            ifelse(month=="09"|month=="10"|month=="11", "spring", NA))))) # create seasons
 
+seasonal$day_of_week = factor(seasonal$day_of_week, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
 mean_seasonal = seasonal %>% 
   group_by(year, season) %>% 
   summarise(mean_cyclists = mean(total_daily_riders, na.rm = T), mean_rain = mean(total_daily_rain, na.rm = T)) %>% 
@@ -74,19 +80,27 @@ ggplot(data = mean_seasonal, aes(season,mean_cyclists, group = year)) +
 
 ## days of week data
 day_of_week_data = seasonal %>% group_by(year, day_of_week) %>% summarise(mean_riders_day = mean(total_daily_riders))
-day_of_week_data$day_of_week = factor(day_of_week_data$day_of_week, levels = c("Monday","Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+day_of_week_data$day_of_week = factor(day_of_week_data$day_of_week, 
+                                      levels = c("Monday","Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
 ggplot(data = day_of_week_data, aes(x = day_of_week, y = mean_riders_day))+
   geom_point(stat = "identity") +
   labs(y = 'mean total daily cyclists', x = 'days of the week')
 
 # Fit a regression model to predict number of cyclists from year, season, day of the week, and rain
 
-lm_season = glm(formula = mean_cyclists ~ season, data = mean_seasonal)
-lm_season
+lm_year = seasonal %>% glm(total_daily_riders ~ year, data = .)
+summary(lm_year)
 
-lm_daily = glm(data = daily_both, formula = total_daily_riders ~ Date)
-predictions = predict(lm_daily)
-plot(daily_both$total_daily_riders ~ daily_both$Date)
-lines(x = daily_both$Date, y = predictions, col = "red")
+lm_season = seasonal %>% lm(total_daily_riders ~ season, data = .)
+summary(lm_season)
 
-seasonal %>% lm(total_daily_riders ~ year, data = .) 
+lm_dow = seasonal %>% lm(total_daily_riders ~ day_of_week, data = .)
+summary(lm_dow)
+
+lm_rain = seasonal %>% lm(total_daily_riders ~ total_daily_rain, data = .)
+summary(lm_rain)
+
+lm_season_rain = seasonal %>% lm(total_daily_riders ~ total_daily_rain*season, data = .)
+summary(lm_season_rain)
